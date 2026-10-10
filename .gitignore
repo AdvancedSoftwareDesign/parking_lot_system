@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# Local database
+db.sqlite3
+
+# Test and coverage artifacts
+.coverage
+htmlcov/
+
+# IDE
+.idea/
