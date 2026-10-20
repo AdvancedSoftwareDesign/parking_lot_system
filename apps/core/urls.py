@@ -1,8 +1,18 @@
+
 from django.urls import path
-from .views import initial_check, capacity_status, set_capacity
+
+from apps.core.views.homepage_view import HomepageView
+from apps.core.views.initial_check_view import initial_check
+from apps.core.views.login_view import LoginView
+from apps.core.views.vehicle_registration_view import VehicleRegistrationView
+
+from .views import capacity_status, set_capacity
 
 urlpatterns = [
     path("check/", initial_check, name="initial-check"),
+    path("login/", LoginView.as_view()),
+    path("home/", HomepageView.as_view()),
+    path("register/", VehicleRegistrationView.as_view()),
     path("capacity/", capacity_status, name="capacity-status"),
     path("capacity/set/", set_capacity, name="set-capacity"),
 ]

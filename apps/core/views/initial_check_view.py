@@ -1,3 +1,4 @@
+
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
@@ -7,6 +8,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
 from apps.accounts.api_views import get_user_role
 from apps.core.services.capacity_repository import DjangoCapacityRepository
 from apps.core.services.capacity_service import (
@@ -16,17 +18,20 @@ from apps.core.services.capacity_service import (
     OccupancyUnavailableError,
 )
 
+
 class UnavailableOccupancy:
     def get_occupied_spaces(self) -> int:
         raise OccupancyUnavailableError(
             "Vehicle occupancy data is not available yet."
         )
 
+
 def get_capacity_service():
     return CapacityService(
         capacity_repository=DjangoCapacityRepository(),
         occupancy_port=UnavailableOccupancy(),
     )
+
 
 def administrator_required(request):
     return get_user_role(request.user) == "Parking Administrator"
