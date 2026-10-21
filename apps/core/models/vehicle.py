@@ -14,5 +14,12 @@ class Vehicle(models.Model):
         related_name="vehicles"
     )
 
+    registration_active = models.BooleanField(default=True)
+
+    def deactivate(self):
+        """Keep the registration and its history; remove entry eligibility."""
+        self.registration_active = False
+        self.save(update_fields=["registration_active"])
+
     def __str__(self):
         return self.registration_number

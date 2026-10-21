@@ -27,13 +27,16 @@ class ParkingEntryService:
             raise ParkingEntryError("Registration number is required.")
 
         vehicle = (
-            Vehicle.objects.select_related("owner")
+            Vehicle.objects.select_for_update().select_related("owner")
             .filter(registration_number=registration_number)
             .first()
         )
 
         if vehicle is None:
             raise ParkingEntryError("Vehicle is not registered.")
+
+        if not vehicle.registration_active:
+            raise ParkingEntryError("The vehicle registration is inactive.")
 
         if not vehicle.owner.is_active:
             raise ParkingEntryError("The employee account is inactive.")

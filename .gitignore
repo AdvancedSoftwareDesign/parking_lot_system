@@ -19,3 +19,5 @@ htmlcov/
 # IDE
 .idea/
 *.iml
+# UC8 validation environment
+.venv-uc8/

@@ -11,7 +11,13 @@ from .views import capacity_status, set_capacity
 from apps.core.views.parking_entry_view import ParkingEntryView
 from apps.core.views.parking_exit_view import ParkingExitView
 
+from apps.core.views.vehicle_deactivation_view import (
+    RegistrationSearchView, VehicleDeactivationView,
+)
+
 urlpatterns = [
+    path("vehicles/search/", RegistrationSearchView.as_view(), name="registration-search"),
+    path("vehicles/<int:vehicle_id>/deactivate/", VehicleDeactivationView.as_view(), name="vehicle-deactivate"),
     path("check/", initial_check, name="initial-check"),
     path("login/", LoginView.as_view()),
     path("home/", HomepageView.as_view()),
