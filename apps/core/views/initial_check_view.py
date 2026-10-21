@@ -1,6 +1,7 @@
 
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
+from apps.core.services.occupancy_service import ParkingRecordOccupancy
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
@@ -29,7 +30,7 @@ class UnavailableOccupancy:
 def get_capacity_service():
     return CapacityService(
         capacity_repository=DjangoCapacityRepository(),
-        occupancy_port=UnavailableOccupancy(),
+        occupancy_port=ParkingRecordOccupancy(),
     )
 
 
