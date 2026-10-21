@@ -428,6 +428,52 @@ class ParkingEntryExitAPITests(TestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+    def test_guard_can_record_vehicle_entry_and_exit(self):
+        from apps.core.models import ParkingRecord, Vehicle
+        from apps.core.models import ParkingCapacity
+
+        # Configure capacity and create a registered vehicle.
+        ParkingCapacity.objects.create(total_capacity=10)
+        vehicle = Vehicle.objects.create(
+            registration_number="26D12345",
+            owner=self.employee,
+        )
+
+        self.authenticate_as(self.guard)
+
+        # Record vehicle entry.
+        entry_response = self.client.post(
+            "/api/entry/",
+            {"registration_number": vehicle.registration_number},
+            format="json",
+        )
+
+        self.assertEqual(entry_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            ParkingRecord.objects.filter(
+                vehicle=vehicle,
+                exit_time__isnull=True,
+            ).count(),
+            1,
+        )
+
+        # Record vehicle exit.
+        exit_response = self.client.post(
+            "/api/exit/",
+            {"registration_number": vehicle.registration_number},
+            format="json",
+        )
+
+        self.assertEqual(exit_response.status_code, status.HTTP_200_OK)
+
+        record = ParkingRecord.objects.get(vehicle=vehicle)
+        self.assertIsNotNone(record.exit_time)
+        self.assertEqual(
+            ParkingRecord.objects.filter(exit_time__isnull=True).count(),
+            0,
+        )
+
 
 
 
