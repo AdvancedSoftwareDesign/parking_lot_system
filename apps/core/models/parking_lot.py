@@ -5,6 +5,22 @@ from django.db import models
 class ParkingLot(models.Model):
     capacity = models.PositiveIntegerField()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._observers = []
+
+    def add_observer(self, observer):
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remove_observer(self, observer):
+        if observer in self._observers:
+            self._observers.remove(observer)
+
+    def notify_observers(self, event):
+        for observer in self._observers:
+            observer.update(self, event)
+
     def clean(self):
         super().clean()
 
