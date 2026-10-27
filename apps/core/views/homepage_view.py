@@ -16,6 +16,6 @@ class HomepageView(APIView):
             "user": {
                 "id": user.id,
                 "username": user.username,
-                "role": "admin" if user.is_staff else "user"
+                "role": user.profile.role
             }
         })
