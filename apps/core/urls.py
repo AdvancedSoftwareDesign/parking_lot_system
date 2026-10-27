@@ -8,6 +8,7 @@ from apps.core.views.parking_lot_view import (
     ParkingLotCapacityView,
     ParkingLotCreateView,
 )
+from apps.core.views.parking_subscription_view import ParkingSubscriptionView
 
 urlpatterns = [
     path("check/", initial_check, name="initial-check"),
@@ -21,5 +22,9 @@ urlpatterns = [
     path(
         "parking-lots/<int:parking_lot_id>/capacity/",
         ParkingLotCapacityView.as_view()
+    ),
+    path(
+        "parking-lots/<int:parking_lot_id>/subscription/",
+        ParkingSubscriptionView.as_view()
     ),
 ]
