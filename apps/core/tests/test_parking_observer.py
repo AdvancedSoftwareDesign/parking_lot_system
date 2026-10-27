@@ -6,6 +6,8 @@ from django.test import TestCase
 from apps.core.models import ParkingLot
 from apps.core.observers.user_observer import UserObserver
 
+from django.core.exceptions import ValidationError
+
 
 class ParkingLotObserverTests(TestCase):
 
@@ -68,3 +70,31 @@ class ParkingLotObserverTests(TestCase):
             "Notification for alice: Parking lot "
             f"{self.parking_lot.pk} has available spaces."
         )
+
+class ParkingLotCapacityTests(TestCase):
+
+    def setUp(self):
+        self.parking_lot = ParkingLot.objects.create(capacity=10)
+
+    def test_set_capacity_saves_valid_capacity(self):
+        self.parking_lot.set_capacity(20)
+
+        self.parking_lot.refresh_from_db()
+
+        self.assertEqual(self.parking_lot.capacity, 20)
+
+    def test_set_capacity_rejects_zero(self):
+        with self.assertRaises(ValidationError):
+            self.parking_lot.set_capacity(0)
+
+        self.parking_lot.refresh_from_db()
+
+        self.assertEqual(self.parking_lot.capacity, 10)
+
+    def test_set_capacity_rejects_negative_value(self):
+        with self.assertRaises(ValidationError):
+            self.parking_lot.set_capacity(-1)
+
+        self.parking_lot.refresh_from_db()
+
+        self.assertEqual(self.parking_lot.capacity, 10)

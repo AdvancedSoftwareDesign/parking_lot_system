@@ -21,6 +21,11 @@ class ParkingLot(models.Model):
         for observer in self._observers:
             observer.update(self, event)
 
+    def set_capacity(self, new_capacity):
+        self.capacity = new_capacity
+        self.full_clean()
+        self.save(update_fields=["capacity"])
+
     def clean(self):
         super().clean()
 
