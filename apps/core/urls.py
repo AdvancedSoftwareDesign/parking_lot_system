@@ -1,4 +1,3 @@
-
 from django.urls import path
 
 from apps.core.views.homepage_view import HomepageView
@@ -10,6 +9,7 @@ from .views import capacity_status, set_capacity
 
 from apps.core.views.parking_entry_view import ParkingEntryView
 from apps.core.views.parking_exit_view import ParkingExitView
+from apps.core.views.parking_status_view import ParkingStatusVehiclesView
 
 urlpatterns = [
     path("check/", initial_check, name="initial-check"),
@@ -20,4 +20,5 @@ urlpatterns = [
     path("capacity/set/", set_capacity, name="set-capacity"),
     path("entry/", ParkingEntryView.as_view(), name="parking-entry"),
     path("exit/", ParkingExitView.as_view(), name="parking-exit"),
+    path("parking-status/vehicles/",ParkingStatusVehiclesView.as_view(),name="parking-status-vehicles"),
 ]

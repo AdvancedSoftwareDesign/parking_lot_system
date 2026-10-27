@@ -1,4 +1,3 @@
-
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from apps.core.services.occupancy_service import ParkingRecordOccupancy
@@ -18,6 +17,9 @@ from apps.core.services.capacity_service import (
     InvalidCapacityError,
     OccupancyUnavailableError,
 )
+from django.utils import timezone
+from django.db import DatabaseError
+from django.utils import timezone
 
 
 class UnavailableOccupancy:
@@ -50,9 +52,11 @@ def initial_check(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def capacity_status(request):
-    if not administrator_required(request):
+    role = get_user_role(request.user)
+
+    if role not in ("Employee", "Security Guard"):
         return Response(
-            {"error": "Only Parking Administrators can access this resource."},
+            {"error": "Only Employees and Security Guards can view parking status."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
@@ -63,11 +67,16 @@ def capacity_status(request):
             {"error": str(error)},
             status=status.HTTP_404_NOT_FOUND,
         )
-    except OccupancyUnavailableError as error:
+    except (OccupancyUnavailableError, DatabaseError):
         return Response(
-            {"error": str(error)},
+            {"error": "Status unavailable. Please retry."},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
+
+    result["checked_at"] = timezone.now().isoformat()
+    result["status"] = (
+        "Full" if result["available_spaces"] == 0 else "Available"
+    )
 
     return Response(result)
 

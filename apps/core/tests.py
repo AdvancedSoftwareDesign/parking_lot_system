@@ -215,7 +215,136 @@ class CapacityAPITests(TestCase):
         mock_get_service.return_value.set_capacity.assert_called_once_with(
             120
         )
-        
+
+class ParkingStatusAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.employee_group, _ = Group.objects.get_or_create(
+            name="Employee"
+        )
+        self.guard_group, _ = Group.objects.get_or_create(
+            name="Security Guard"
+        )
+        self.admin_group, _ = Group.objects.get_or_create(
+            name="Parking Administrator"
+        )
+
+        self.employee = User.objects.create_user(
+            username="status_employee",
+            password="test-password-123",
+        )
+        self.employee.groups.add(self.employee_group)
+
+        self.guard = User.objects.create_user(
+            username="status_guard",
+            password="test-password-123",
+        )
+        self.guard.groups.add(self.guard_group)
+
+        self.admin = User.objects.create_user(
+            username="status_admin",
+            password="test-password-123",
+        )
+        self.admin.groups.add(self.admin_group)
+
+    def authenticate_as(self, user):
+        token, _ = Token.objects.get_or_create(user=user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {token.key}"
+        )
+
+
+    @patch("apps.core.views.initial_check_view.get_capacity_service")
+    def test_status_unavailable_returns_503(self, mock_get_service):
+        mock_get_service.return_value.get_capacity_status.side_effect = (
+            OccupancyUnavailableError("Occupancy data unavailable.")
+        )
+        self.authenticate_as(self.employee)
+
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        self.assertEqual(
+            response.data["error"],
+            "Status unavailable. Please retry.",
+        )
+
+    @patch("apps.core.views.initial_check_view.get_capacity_service")
+    def test_unconfigured_capacity_returns_404(self, mock_get_service):
+        from apps.core.services.capacity_service import (
+            CapacityNotConfiguredError,
+        )
+
+        mock_get_service.return_value.get_capacity_status.side_effect = (
+            CapacityNotConfiguredError(
+                "Parking capacity has not been configured."
+            )
+        )
+        self.authenticate_as(self.employee)
+
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertIn("error", response.data)
+
+    @patch("apps.core.views.initial_check_view.get_capacity_service")
+    def test_employee_can_view_parking_status(self, mock_get_service):
+        mock_get_service.return_value.get_capacity_status.return_value = {
+            "total_capacity": 100,
+            "occupied_spaces": 20,
+            "available_spaces": 80,
+        }
+        self.authenticate_as(self.employee)
+
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["total_capacity"], 100)
+        self.assertEqual(response.data["occupied_spaces"], 20)
+        self.assertEqual(response.data["available_spaces"], 80)
+        self.assertEqual(response.data["status"], "Available")
+        self.assertIn("checked_at", response.data)
+
+    @patch("apps.core.views.initial_check_view.get_capacity_service")
+    def test_guard_can_view_full_parking_status(self, mock_get_service):
+        mock_get_service.return_value.get_capacity_status.return_value = {
+            "total_capacity": 10,
+            "occupied_spaces": 10,
+            "available_spaces": 0,
+        }
+        self.authenticate_as(self.guard)
+
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["available_spaces"], 0)
+        self.assertEqual(response.data["status"], "Full")
+
+    def test_admin_cannot_use_view_status_endpoint(self):
+        self.authenticate_as(self.admin)
+
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_anonymous_user_cannot_view_parking_status(self):
+        response = self.client.get("/api/capacity/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
 class ParkingEntryServiceTests(TestCase):
     def setUp(self):
         self.employee = User.objects.create_user(
@@ -475,5 +604,76 @@ class ParkingEntryExitAPITests(TestCase):
         )
 
 
+class ParkingStatusVehiclesAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
 
+        employee_group, _ = Group.objects.get_or_create(name="Employee")
+        guard_group, _ = Group.objects.get_or_create(name="Security Guard")
 
+        self.employee = User.objects.create_user(
+            username="vehicle_status_employee",
+            password="test-password-123",
+        )
+        self.employee.groups.add(employee_group)
+
+        self.guard = User.objects.create_user(
+            username="vehicle_status_guard",
+            password="test-password-123",
+        )
+        self.guard.groups.add(guard_group)
+
+        self.active_vehicle = Vehicle.objects.create(
+            registration_number="26D12345",
+            owner=self.employee,
+        )
+        self.exited_vehicle = Vehicle.objects.create(
+            registration_number="26D54321",
+            owner=self.employee,
+        )
+
+        ParkingRecord.objects.create(vehicle=self.active_vehicle)
+
+        exited_record = ParkingRecord.objects.create(
+            vehicle=self.exited_vehicle,
+        )
+        from django.utils import timezone
+        exited_record.exit_time = timezone.now()
+        exited_record.save(update_fields=["exit_time"])
+
+    def authenticate_as(self, user):
+        token, _ = Token.objects.get_or_create(user=user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {token.key}"
+        )
+
+    def test_guard_can_view_vehicles_inside(self):
+        self.authenticate_as(self.guard)
+
+        response = self.client.get("/api/parking-status/vehicles/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["vehicles"]), 1)
+        self.assertEqual(
+            response.data["vehicles"][0]["registration_number"],
+            "26D12345",
+        )
+        self.assertIn("entry_time", response.data["vehicles"][0])
+
+    def test_employee_cannot_view_vehicles_inside(self):
+        self.authenticate_as(self.employee)
+
+        response = self.client.get("/api/parking-status/vehicles/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_anonymous_user_cannot_view_vehicles_inside(self):
+        response = self.client.get("/api/parking-status/vehicles/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
