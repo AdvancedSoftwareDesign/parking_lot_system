@@ -1,3 +1,5 @@
+from apps.core.views.parking_right_deactivation_view import ParkingRightDeactivationView
+from apps.core.views.application_review_view import ApplicationReviewView
 from django.urls import path
 
 from apps.core.views.homepage_view import HomepageView
@@ -11,6 +13,9 @@ from apps.core.views.parking_lot_view import (
 from apps.core.views.parking_subscription_view import ParkingSubscriptionView
 from apps.core.views.parking_application_view import ParkingApplicationView
 from apps.core.views.parking_extension_view import ParkingExtensionView
+from apps.core.views.guest_parking_application_view import (
+    GuestParkingApplicationView,
+)
 
 urlpatterns = [
     path("check/", initial_check, name="initial-check"),
@@ -35,8 +40,23 @@ urlpatterns = [
     name="parking-application",
     ),
     path(
+    "guest-parking-applications/",
+    GuestParkingApplicationView.as_view(),
+    name="guest-parking-application",
+    ),
+    path(
     "parking-extensions/",
     ParkingExtensionView.as_view(),
     name="parking-extension",
+    ),
+    path(
+        "application-reviews/<str:review_type>/<int:item_id>/",
+        ApplicationReviewView.as_view(),
+        name="application-review",
+    ),
+    path(
+        "parking-rights/<str:right_type>/<int:right_id>/deactivate/",
+        ParkingRightDeactivationView.as_view(),
+        name="parking-right-deactivate",
     ),
 ]

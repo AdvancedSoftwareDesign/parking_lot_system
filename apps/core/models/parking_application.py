@@ -38,7 +38,8 @@ class ParkingApplication(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
-
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
     @property
     def duration_days(self):
         return self.duration_months * 30

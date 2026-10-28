@@ -29,7 +29,8 @@ class ParkingExtensionRequest(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
-
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
     def __str__(self):
         return (
             f"Extension request {self.pk} "
