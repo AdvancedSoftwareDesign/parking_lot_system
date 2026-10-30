@@ -7,3 +7,4 @@ from .employee_parking_right import EmployeeParkingRight
 from .parking_extension_request import ParkingExtensionRequest
 from .guest_parking_application import GuestParkingApplication
 from .guest_parking_right import GuestParkingRight
+from .parking_session import ParkingSession
