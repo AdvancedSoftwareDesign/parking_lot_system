@@ -16,6 +16,10 @@ from apps.core.views.parking_extension_view import ParkingExtensionView
 from apps.core.views.guest_parking_application_view import (
     GuestParkingApplicationView,
 )
+from apps.core.views.parking_session_view import (
+    ParkingEntryView,
+    ParkingExitView,
+)
 
 urlpatterns = [
     path("check/", initial_check, name="initial-check"),
@@ -58,5 +62,13 @@ urlpatterns = [
         "parking-rights/<str:right_type>/<int:right_id>/deactivate/",
         ParkingRightDeactivationView.as_view(),
         name="parking-right-deactivate",
+    ),
+    path(
+        "parking-lots/<int:parking_lot_id>/entry/",
+        ParkingEntryView.as_view()
+    ),
+    path(
+        "parking-lots/<int:parking_lot_id>/exit/",
+        ParkingExitView.as_view()
     ),
 ]
