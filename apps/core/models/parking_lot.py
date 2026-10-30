@@ -26,6 +26,14 @@ class ParkingLot(models.Model):
         self.full_clean()
         self.save(update_fields=["capacity"])
 
+    def get_occupied_spaces(self):
+        return self.parking_sessions.filter(
+            exit_time__isnull=True
+        ).count()
+
+    def get_available_spaces(self):
+        return self.capacity - self.get_occupied_spaces()
+
     def clean(self):
         super().clean()
 
