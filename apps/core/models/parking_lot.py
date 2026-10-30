@@ -22,9 +22,27 @@ class ParkingLot(models.Model):
             observer.update(self, event)
 
     def set_capacity(self, new_capacity):
+        original_capacity = self.capacity
         self.capacity = new_capacity
-        self.full_clean()
-        self.save(update_fields=["capacity"])
+
+        try:
+            self.full_clean()
+
+            occupied_spaces = self.get_occupied_spaces()
+
+            if self.capacity < occupied_spaces:
+                raise ValidationError({
+                    "capacity": (
+                        "Capacity can't be lower than the current "
+                        f"number of parked vehicles ({occupied_spaces})."
+                    )
+                })
+
+            self.save(update_fields=["capacity"])
+
+        except ValidationError:
+            self.capacity = original_capacity
+            raise
 
     def get_occupied_spaces(self):
         return self.parking_sessions.filter(
